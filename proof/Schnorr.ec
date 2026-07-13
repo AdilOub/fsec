@@ -3,6 +3,8 @@ pragma Goals:printall.
 require import AllCore FMap List Distr Finite FelTactic StdBigop StdOrder Mu_mem.
 import RealOrder.
 
+
+(* Type groupe abstrait qui sera instancié dans étape B*)
 require DLog.
 clone import DLog as DL
   rename "Adversary" as "Adv_DL"
@@ -10,6 +12,7 @@ clone import DLog as DL
 import G GP FD GP.ZModE GP.ZModE.ZModpField.
 import DLog.
 
+(* Type généraux *)
 type com_t  = group. (* Commitment *)
 type chal_t = exp.   (* Challenge  *)
 type resp_t = exp.   (* Response   *)
@@ -23,6 +26,7 @@ type sig_t = com_t * resp_t.
 
 type query_t = pk_t * com_t * msg_t.
 
+(* Théorie des signatures dans le ROM, dans la couche E c'est ce jeu que binaire devra rejoindre par equiv*)
 require DigitalSignaturesROM.
 clone import DigitalSignaturesROM as DS_ROM with
   type pk_t  <- pk_t,
@@ -34,11 +38,15 @@ clone import DigitalSignaturesROM as DS_ROM with
 import StatelessROM.
 import DSS.Stateless.
 
+(* Distribution. op losesless uniform dchal pas forcément sur tout Zq, pb du biais du hash*)
 (* In the simulator, we sample response from dt. *)
 op dnonce : exp distr = dt.
 (* The distribution of private keys must match the one used in Exp_DL. *)
 op dsk : sk_t distr = dt.
 op [lossless uniform] dchal : chal_t distr.
+
+
+(* Schéma et special soundness. Le code jasmin va devoir être equiv à ce prog !*)
 
 (* TODO: Really need to ask on Zulip how to work with tuples. *)
 op verify (pk : pk_t) (t : trans_t) =
@@ -105,6 +113,9 @@ rewrite divrr.
 by rewrite exp1.
 qed.
 
+
+(* Borne et clones forking *)
+
 (* Number of random oracle queries. *)
 const QR : {int | 1 <= QR} as QR_pos.
 
@@ -136,6 +147,8 @@ realize Q_pos     by smt(QR_pos).
 realize dresp_ll  by exact dchal_ll.
 realize dresp_uni by exact dchal_uni.
 
+
+(* Serialization d'état *)
 import ForkingLRO.St.
 
 op group2st : group -> state_t.
@@ -183,6 +196,9 @@ realize elem2st_inj by exact msg2st_inj.
 realize elem2st_can by exact msg2st_can.
 realize int2st_inj by exact int2st_inj.
 realize int2st_can by exact int2st_can.
+
+
+(* Coeur du forking, wrapper pour l'étape E*)
 
 section SECURITY_EUF_KOA.
 
@@ -484,6 +500,7 @@ qed.
 
 end section SECURITY_EUF_KOA.
 
+(* Simulation *)
 section SECURITY_EUF_CMA.
 
 module type FAdv_CMA (SO : SOracle_CMA_ROM) = {
